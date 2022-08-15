@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin/contracts@4.5.0/utils/cryptography/MerkleProof.sol";
 
 /**
  * @dev Implementation of https://eips.ethereum.org/EIPS/eip-721[ERC721] Non-Fungible Token Standard, including
@@ -567,23 +568,33 @@ contract ERC721A is
 
 
 contract OrignalMyths is ERC721A, Ownable {
+    bytes32 public root;
 
     uint256 public PUBLIC_LIMIT;
     uint256 public WHITELIST_LIMIT;
-    uint256 public MINT_PRICE; 
+    uint256 public COMMUNITY_MINT_LIMIT;
+    uint256 public MINT_PRICE;
+    uint256 public WHITELIST_MINT_PRICE; 
+    uint256 public COMMUNITY_MINT_PRICE;
     uint256 public SALE_START_TIME;
     uint256 public SALE_END_TIME;
     uint256 public WHITELIST_SALE_START_TIME;
     uint256 public WHITELIST_SALE_END_TIME;
-    
+    uint256 public COMMUNITY_SALE_START_TIME;
+    uint256 public COMMUNITY_SALE_END_TIME;
     mapping(address=>uint256) internal nftCounter;
     mapping(address=>uint256) internal whitelistCounter;
-    
-
+    mapping(address=>uint256) internal communityCounter;
+    mapping(address=>bool) internal freeMint;
+    mapping(address=>bool) internal communityWhitelisted;
+    address[] public community;
     constructor()ERC721A("Orginal Myths", "MYTH", 500, 8000){
         PUBLIC_LIMIT = 2;
         WHITELIST_LIMIT = 5;
+        COMMUNITY_MINT_LIMIT = 5;
         MINT_PRICE = 0.06 ether;
+        WHITELIST_MINT_PRICE = 0.06 ether;
+        COMMUNITY_MINT_PRICE = 0.06 ether;
     }
 
     modifier whenSaleIsOn() {
@@ -595,38 +606,106 @@ contract OrignalMyths is ERC721A, Ownable {
     require(WHITELIST_SALE_START_TIME < block.timestamp && block.timestamp < WHITELIST_SALE_END_TIME, "Whitelist Sale is not On");
     _;
     }
+    modifier whenCommunitySaleIsOn() {
+    require(COMMUNITY_SALE_START_TIME < block.timestamp && block.timestamp < COMMUNITY_SALE_END_TIME, "Whitelist Sale is not On");
+    _;
+    }
 
     function maxLimit() public view returns(uint256){
-        return collectionSize;
+      return collectionSize;
     }
 
     function walletMinted(address wallet) public view returns(uint256){
-        return nftCounter[wallet];
+     return nftCounter[wallet];
     }
+    
     function whitelistedWalletMinted(address wallet) public view returns(uint256){
-        return whitelistCounter[wallet];
+     return whitelistCounter[wallet];
     }
 
-    
+    function communityWalletMinted(address wallet) public view returns(uint256){
+     return communityCounter[wallet];
+    }
+
+    function isAllowedFree(address wallet) public view returns(bool){
+      return freeMint[wallet];
+    }
+
+    function checkCommunityAllowed(address community_) public view returns(bool){
+      return communityWhitelisted[community_];
+    }
+
+    function checkCommunityHolder(address wallet) public view returns(bool status){
+      for(uint256 i=0; i< community.length; i++){
+        if(checkCommunityAllowed(community[i])){
+          if(IERC721(community[i]).balanceOf(wallet)>0){
+            return true;
+          } else {
+            return false;
+          }
+        }
+      }
+    }
+
     function publicMint(uint256 quantity) public payable whenSaleIsOn {
-        nftCounter[msg.sender]+=quantity;
-        require(walletMinted(msg.sender)<=PUBLIC_LIMIT, "You cannot mint more than 2");
-        require(msg.value == quantity * MINT_PRICE, "Send proper msg value");
-        require(totalSupply()+quantity<=maxLimit(),"Purchase would Exceed max supply");
-        _safeMint(msg.sender, quantity);
+      nftCounter[msg.sender]+=quantity;
+      require(walletMinted(msg.sender)<=PUBLIC_LIMIT, "You cannot mint more than 2");
+      require(msg.value == quantity * MINT_PRICE, "Send proper msg value");
+      require(totalSupply()+quantity<=maxLimit(),"Purchase would Exceed max supply");
+      _safeMint(msg.sender, quantity);
     }
 
         
-    function whiteListMint(uint256 quantity) public payable whenWhiteSaleIsOn {
-        whitelistCounter[msg.sender]+=quantity;
-        require(whitelistedWalletMinted(msg.sender)<=WHITELIST_LIMIT, "You cannot mint more than 5");
-        require(msg.value == quantity * MINT_PRICE, "Send proper msg value");
-        require(totalSupply()+quantity<=maxLimit(),"Purchase would Exceed max supply");
-        _safeMint(msg.sender, quantity);
+    function whiteListMint(uint256 quantity, bytes32[] memory proof) public payable whenWhiteSaleIsOn {
+      require(isValid(proof, keccak256(abi.encodePacked(msg.sender))), "Not a part of Allowlist");
+      whitelistCounter[msg.sender]+=quantity;
+      require(whitelistedWalletMinted(msg.sender)<=WHITELIST_LIMIT, "You cannot mint more than limit");
+      if(isAllowedFree(msg.sender)){
+        require(msg.value == 0, "You are eligible for free mint");
+      } else {
+        require(msg.value == quantity * WHITELIST_MINT_PRICE, "Send proper msg value");
+      }
+      require(totalSupply()+quantity<=maxLimit(),"Purchase would Exceed max supply");
+      _safeMint(msg.sender, quantity);
+    }
+
+    function communityMint(uint256 quantity) public payable whenCommunitySaleIsOn {
+      require(checkCommunityHolder(msg.sender), "You do not hold NFT from selected commuities");
+      require(totalSupply()+quantity<=maxLimit(),"Purchase would Exceed max supply");
+      communityCounter[msg.sender]+=quantity;
+      require(communityWalletMinted(msg.sender)<=COMMUNITY_MINT_LIMIT, "You cannot mint more than limit");
+      require(msg.value == COMMUNITY_MINT_PRICE * quantity, "Send proper msg value");
+      _safeMint(msg.sender, quantity);
     }
 
     function airdropMint(uint256 quantity) external onlyOwner {
-        _safeMint(msg.sender, quantity);
+     _safeMint(msg.sender, quantity);
+    }
+
+    function setFreeMintWallet(address[] memory wallets, bool status) external onlyOwner {
+      for(uint256 i=0; i<wallets.length; i++){
+        freeMint[wallets[i]] = status;
+      }
+    }
+
+    function setCommunity(address[] memory communities) external onlyOwner {
+      for(uint256 i=0; i<communities.length; i++){
+        community.push(communities[i]);
+        communityWhitelisted[communities[i]] = true;
+      }
+    }
+    
+    function removeCommunity(address[] memory communities) external onlyOwner {
+       for(uint256 i=0; i<communities.length; i++){
+        communityWhitelisted[communities[i]] = false;
+      }     
+    }
+    function isValid(bytes32[] memory proof, bytes32 leaf) public view returns (bool) {
+        return MerkleProof.verify(proof, root, leaf);
+    }
+
+    function setRoot(bytes32 _root) public onlyOwner {
+        root = _root;
     }
 
     function extendPublicSale(uint256 startTime, uint256 endTime) external onlyOwner {
@@ -638,6 +717,15 @@ contract OrignalMyths is ERC721A, Ownable {
             SALE_END_TIME = endTime;
         }
     }
+    function extendCommuitySale(uint256 startTime, uint256 endTime) external onlyOwner {
+        require (startTime>0||endTime>0, "Enter Atleast one time");
+        if(startTime>0){
+            SALE_START_TIME = startTime;
+        }
+        if(startTime>0){
+            SALE_END_TIME = endTime;
+        }
+    }    
     function extendWhiteListSale(uint256 startTime, uint256 endTime) external onlyOwner {
         require (startTime>0||endTime>0, "Enter Atleast one time");
         if(startTime>0){
