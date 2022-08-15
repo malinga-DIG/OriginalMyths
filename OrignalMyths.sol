@@ -649,7 +649,7 @@ contract OrignalMyths is ERC721A, Ownable {
 
     function publicMint(uint256 quantity) public payable whenSaleIsOn {
       nftCounter[msg.sender]+=quantity;
-      require(walletMinted(msg.sender)<=PUBLIC_LIMIT, "You cannot mint more than 2");
+      require(walletMinted(msg.sender)<=PUBLIC_LIMIT, "You cannot mint more than limit");
       require(msg.value == quantity * MINT_PRICE, "Send proper msg value");
       require(totalSupply()+quantity<=maxLimit(),"Purchase would Exceed max supply");
       _safeMint(msg.sender, quantity);
