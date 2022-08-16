@@ -566,7 +566,6 @@ contract ERC721A is
   ) internal virtual {}
 }
 
-
 contract OrignalMyths is ERC721A, Ownable {
     bytes32 public root;
 
@@ -589,16 +588,16 @@ contract OrignalMyths is ERC721A, Ownable {
     mapping(address=>bool) internal communityWhitelisted;
     address[] public community;
     constructor()ERC721A("Orginal Myths", "MYTH", 500, 8000){
-        PUBLIC_LIMIT = 2;
-        WHITELIST_LIMIT = 5;
-        COMMUNITY_MINT_LIMIT = 5;
+        PUBLIC_LIMIT = 5;
+        WHITELIST_LIMIT = 2;
+        COMMUNITY_MINT_LIMIT = 2;
         MINT_PRICE = 0.06 ether;
         WHITELIST_MINT_PRICE = 0.06 ether;
         COMMUNITY_MINT_PRICE = 0.06 ether;
     }
 
     modifier whenSaleIsOn() {
-    require(SALE_END_TIME < block.timestamp && block.timestamp < SALE_END_TIME, "Sale is not on");
+    require(SALE_START_TIME < block.timestamp && block.timestamp < SALE_END_TIME, "Sale is not on");
     _;
     }
 
@@ -652,6 +651,7 @@ contract OrignalMyths is ERC721A, Ownable {
       require(walletMinted(msg.sender)<=PUBLIC_LIMIT, "You cannot mint more than limit");
       require(msg.value == quantity * MINT_PRICE, "Send proper msg value");
       require(totalSupply()+quantity<=maxLimit(),"Purchase would Exceed max supply");
+      payable(owner()).transfer(msg.value);
       _safeMint(msg.sender, quantity);
     }
 
@@ -666,6 +666,7 @@ contract OrignalMyths is ERC721A, Ownable {
         require(msg.value == quantity * WHITELIST_MINT_PRICE, "Send proper msg value");
       }
       require(totalSupply()+quantity<=maxLimit(),"Purchase would Exceed max supply");
+      payable(owner()).transfer(msg.value);
       _safeMint(msg.sender, quantity);
     }
 
@@ -675,6 +676,7 @@ contract OrignalMyths is ERC721A, Ownable {
       communityCounter[msg.sender]+=quantity;
       require(communityWalletMinted(msg.sender)<=COMMUNITY_MINT_LIMIT, "You cannot mint more than limit");
       require(msg.value == COMMUNITY_MINT_PRICE * quantity, "Send proper msg value");
+      payable(owner()).transfer(msg.value);
       _safeMint(msg.sender, quantity);
     }
 
@@ -713,7 +715,7 @@ contract OrignalMyths is ERC721A, Ownable {
         if(startTime>0){
             SALE_START_TIME = startTime;
         }
-        if(startTime>0){
+        if(endTime>0){
             SALE_END_TIME = endTime;
         }
     }
@@ -722,7 +724,7 @@ contract OrignalMyths is ERC721A, Ownable {
         if(startTime>0){
             SALE_START_TIME = startTime;
         }
-        if(startTime>0){
+        if(endTime>0){
             SALE_END_TIME = endTime;
         }
     }    
@@ -731,7 +733,7 @@ contract OrignalMyths is ERC721A, Ownable {
         if(startTime>0){
             WHITELIST_SALE_START_TIME = startTime;
         }
-        if(startTime>0){
+        if(endTime>0){
             WHITELIST_SALE_END_TIME = endTime;
         }
     }
