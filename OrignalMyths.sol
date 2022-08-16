@@ -684,6 +684,7 @@ contract OrignalMyths is ERC721A, Ownable {
     }
 
     function airdropMint(uint256 quantity) external onlyOwner {
+      require(totalSupply()+quantity<=maxLimit(),"Mint would Exceed max supply");
      _safeMint(msg.sender, quantity);
     }
 
