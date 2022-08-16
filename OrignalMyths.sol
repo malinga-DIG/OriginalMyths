@@ -639,11 +639,14 @@ contract OrignalMyths is ERC721A, Ownable {
         if(checkCommunityAllowed(community[i])){
           if(IERC721(community[i]).balanceOf(wallet)>0){
             return true;
-          } else {
-            return false;
           }
         }
       }
+      return false;
+    }
+
+    function setBaseURI(string memory URI) external onlyOwner {
+      _setBaseURI(URI);
     }
 
     function publicMint(uint256 quantity) public payable whenSaleIsOn {
