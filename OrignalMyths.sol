@@ -726,10 +726,10 @@ contract OrignalMyths is ERC721A, Ownable {
     function extendCommuitySale(uint256 startTime, uint256 endTime) external onlyOwner {
         require (startTime>0||endTime>0, "Enter Atleast one time");
         if(startTime>0){
-            SALE_START_TIME = startTime;
+            COMMUNITY_SALE_START_TIME = startTime;
         }
         if(endTime>0){
-            SALE_END_TIME = endTime;
+            COMMUNITY_SALE_END_TIME = endTime;
         }
     }    
     function extendWhiteListSale(uint256 startTime, uint256 endTime) external onlyOwner {
