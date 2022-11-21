@@ -2276,7 +2276,7 @@ contract OriginalMyths is ERC721A, Ownable, ReentrancyGuard {
  
     function whitelistMint(uint256 quantity, bytes32[] memory proof) external  nonReentrant {
         require(whenWhitelistSaleIsOn() == true, "OM: Whitelist Sale Not Started Yet");
-        require(isValid(proof, keccak256(abi.encodePacked(msg.sender))), "EF: Not a part of Whitelist");
+        require(isValid(proof, keccak256(abi.encodePacked(msg.sender))), "OM: Not a part of Whitelist");
         whitelistCounter[msg.sender] += quantity;
         require(whitelistCounter[msg.sender] <= WHITELIST_LIMIT, "OM: Whitelist Limit Exceeded");
         whitelistMinted+=quantity;
