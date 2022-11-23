@@ -2165,10 +2165,10 @@ contract OriginalMyths is ERC721A, Ownable, ReentrancyGuard {
     bytes32 public root;
     address private _signerAddress;
     uint256 public constant MAX_SUPPLY = 2000;
-    uint256 private MAX_WHITELIST_LIMIT = 1000;
-    uint256 private whitelistMinted;
-    uint256 private WHITELIST_LIMIT = 1;
-    uint256 private PUBLIC_LIMIT = 1;
+    uint256 public MAX_WHITELIST_LIMIT = 1000;
+    uint256 public whitelistMinted;
+    uint256 public WHITELIST_LIMIT = 1;
+    uint256 public PUBLIC_LIMIT = 1;
     uint256 public WHITELIST_SALE_START_TIME;
     uint256 public WHITELIST_SALE_END_TIME;
     uint256 public PUBLIC_SALE_START_TIME;
