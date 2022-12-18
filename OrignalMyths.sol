@@ -78,225 +78,7 @@ library Strings {
     }
 }
 
-// File: @openzeppelin/contracts/utils/cryptography/ECDSA.sol
 
-
-// OpenZeppelin Contracts (last updated v4.7.3) (utils/cryptography/ECDSA.sol)
-
-pragma solidity ^0.8.0;
-
-
-/**
- * @dev Elliptic Curve Digital Signature Algorithm (ECDSA) operations.
- *
- * These functions can be used to verify that a message was signed by the holder
- * of the private keys of a given address.
- */
-library ECDSA {
-    enum RecoverError {
-        NoError,
-        InvalidSignature,
-        InvalidSignatureLength,
-        InvalidSignatureS,
-        InvalidSignatureV
-    }
-
-    function _throwError(RecoverError error) private pure {
-        if (error == RecoverError.NoError) {
-            return; // no error: do nothing
-        } else if (error == RecoverError.InvalidSignature) {
-            revert("ECDSA: invalid signature");
-        } else if (error == RecoverError.InvalidSignatureLength) {
-            revert("ECDSA: invalid signature length");
-        } else if (error == RecoverError.InvalidSignatureS) {
-            revert("ECDSA: invalid signature 's' value");
-        } else if (error == RecoverError.InvalidSignatureV) {
-            revert("ECDSA: invalid signature 'v' value");
-        }
-    }
-
-    /**
-     * @dev Returns the address that signed a hashed message (`hash`) with
-     * `signature` or error string. This address can then be used for verification purposes.
-     *
-     * The `ecrecover` EVM opcode allows for malleable (non-unique) signatures:
-     * this function rejects them by requiring the `s` value to be in the lower
-     * half order, and the `v` value to be either 27 or 28.
-     *
-     * IMPORTANT: `hash` _must_ be the result of a hash operation for the
-     * verification to be secure: it is possible to craft signatures that
-     * recover to arbitrary addresses for non-hashed data. A safe way to ensure
-     * this is by receiving a hash of the original message (which may otherwise
-     * be too long), and then calling {toEthSignedMessageHash} on it.
-     *
-     * Documentation for signature generation:
-     * - with https://web3js.readthedocs.io/en/v1.3.4/web3-eth-accounts.html#sign[Web3.js]
-     * - with https://docs.ethers.io/v5/api/signer/#Signer-signMessage[ethers]
-     *
-     * _Available since v4.3._
-     */
-    function tryRecover(bytes32 hash, bytes memory signature) internal pure returns (address, RecoverError) {
-        if (signature.length == 65) {
-            bytes32 r;
-            bytes32 s;
-            uint8 v;
-            // ecrecover takes the signature parameters, and the only way to get them
-            // currently is to use assembly.
-            /// @solidity memory-safe-assembly
-            assembly {
-                r := mload(add(signature, 0x20))
-                s := mload(add(signature, 0x40))
-                v := byte(0, mload(add(signature, 0x60)))
-            }
-            return tryRecover(hash, v, r, s);
-        } else {
-            return (address(0), RecoverError.InvalidSignatureLength);
-        }
-    }
-
-    /**
-     * @dev Returns the address that signed a hashed message (`hash`) with
-     * `signature`. This address can then be used for verification purposes.
-     *
-     * The `ecrecover` EVM opcode allows for malleable (non-unique) signatures:
-     * this function rejects them by requiring the `s` value to be in the lower
-     * half order, and the `v` value to be either 27 or 28.
-     *
-     * IMPORTANT: `hash` _must_ be the result of a hash operation for the
-     * verification to be secure: it is possible to craft signatures that
-     * recover to arbitrary addresses for non-hashed data. A safe way to ensure
-     * this is by receiving a hash of the original message (which may otherwise
-     * be too long), and then calling {toEthSignedMessageHash} on it.
-     */
-    function recover(bytes32 hash, bytes memory signature) internal pure returns (address) {
-        (address recovered, RecoverError error) = tryRecover(hash, signature);
-        _throwError(error);
-        return recovered;
-    }
-
-    /**
-     * @dev Overload of {ECDSA-tryRecover} that receives the `r` and `vs` short-signature fields separately.
-     *
-     * See https://eips.ethereum.org/EIPS/eip-2098[EIP-2098 short signatures]
-     *
-     * _Available since v4.3._
-     */
-    function tryRecover(
-        bytes32 hash,
-        bytes32 r,
-        bytes32 vs
-    ) internal pure returns (address, RecoverError) {
-        bytes32 s = vs & bytes32(0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
-        uint8 v = uint8((uint256(vs) >> 255) + 27);
-        return tryRecover(hash, v, r, s);
-    }
-
-    /**
-     * @dev Overload of {ECDSA-recover} that receives the `r and `vs` short-signature fields separately.
-     *
-     * _Available since v4.2._
-     */
-    function recover(
-        bytes32 hash,
-        bytes32 r,
-        bytes32 vs
-    ) internal pure returns (address) {
-        (address recovered, RecoverError error) = tryRecover(hash, r, vs);
-        _throwError(error);
-        return recovered;
-    }
-
-    /**
-     * @dev Overload of {ECDSA-tryRecover} that receives the `v`,
-     * `r` and `s` signature fields separately.
-     *
-     * _Available since v4.3._
-     */
-    function tryRecover(
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal pure returns (address, RecoverError) {
-        // EIP-2 still allows signature malleability for ecrecover(). Remove this possibility and make the signature
-        // unique. Appendix F in the Ethereum Yellow paper (https://ethereum.github.io/yellowpaper/paper.pdf), defines
-        // the valid range for s in (301): 0 < s < secp256k1n ÷ 2 + 1, and for v in (302): v ∈ {27, 28}. Most
-        // signatures from current libraries generate a unique signature with an s-value in the lower half order.
-        //
-        // If your library generates malleable signatures, such as s-values in the upper range, calculate a new s-value
-        // with 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1 and flip v from 27 to 28 or
-        // vice versa. If your library also generates signatures with 0/1 for v instead 27/28, add 27 to v to accept
-        // these malleable signatures as well.
-        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
-            return (address(0), RecoverError.InvalidSignatureS);
-        }
-        if (v != 27 && v != 28) {
-            return (address(0), RecoverError.InvalidSignatureV);
-        }
-
-        // If the signature is valid (and not malleable), return the signer address
-        address signer = ecrecover(hash, v, r, s);
-        if (signer == address(0)) {
-            return (address(0), RecoverError.InvalidSignature);
-        }
-
-        return (signer, RecoverError.NoError);
-    }
-
-    /**
-     * @dev Overload of {ECDSA-recover} that receives the `v`,
-     * `r` and `s` signature fields separately.
-     */
-    function recover(
-        bytes32 hash,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) internal pure returns (address) {
-        (address recovered, RecoverError error) = tryRecover(hash, v, r, s);
-        _throwError(error);
-        return recovered;
-    }
-
-    /**
-     * @dev Returns an Ethereum Signed Message, created from a `hash`. This
-     * produces hash corresponding to the one signed with the
-     * https://eth.wiki/json-rpc/API#eth_sign[`eth_sign`]
-     * JSON-RPC method as part of EIP-191.
-     *
-     * See {recover}.
-     */
-    function toEthSignedMessageHash(bytes32 hash) internal pure returns (bytes32) {
-        // 32 is the length in bytes of hash,
-        // enforced by the type signature above
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
-    }
-
-    /**
-     * @dev Returns an Ethereum Signed Message, created from `s`. This
-     * produces hash corresponding to the one signed with the
-     * https://eth.wiki/json-rpc/API#eth_sign[`eth_sign`]
-     * JSON-RPC method as part of EIP-191.
-     *
-     * See {recover}.
-     */
-    function toEthSignedMessageHash(bytes memory s) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n", Strings.toString(s.length), s));
-    }
-
-    /**
-     * @dev Returns an Ethereum Signed Typed Data, created from a
-     * `domainSeparator` and a `structHash`. This produces hash corresponding
-     * to the one signed with the
-     * https://eips.ethereum.org/EIPS/eip-712[`eth_signTypedData`]
-     * JSON-RPC method as part of EIP-712.
-     *
-     * See {recover}.
-     */
-    function toTypedDataHash(bytes32 domainSeparator, bytes32 structHash) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
-    }
-}
 
 // File: @openzeppelin/contracts/security/ReentrancyGuard.sol
 
@@ -1209,7 +991,7 @@ contract ERC721A is IERC721A {
      * To change the starting token ID, please override this function.
      */
     function _startTokenId() internal view virtual returns (uint256) {
-        return 1;
+        return 0;
     }
 
     /**
@@ -2147,78 +1929,411 @@ contract ERC721A is IERC721A {
     }
 }
 
-// File: EngagementFarmers.sol
+
+/**
+ * @dev Library for managing
+ * https://en.wikipedia.org/wiki/Set_(abstract_data_type)[sets] of primitive
+ * types.
+ *
+ * Sets have the following properties:
+ *
+ * - Elements are added, removed, and checked for existence in constant time
+ * (O(1)).
+ * - Elements are enumerated in O(n). No guarantees are made on the ordering.
+ *
+ * ```
+ * contract Example {
+ *     // Add the library methods
+ *     using EnumerableSet for EnumerableSet.AddressSet;
+ *
+ *     // Declare a set state variable
+ *     EnumerableSet.AddressSet private mySet;
+ * }
+ * ```
+ *
+ * As of v3.3.0, sets of type `bytes32` (`Bytes32Set`), `address` (`AddressSet`)
+ * and `uint256` (`UintSet`) are supported.
+ *
+ * [WARNING]
+ * ====
+ *  Trying to delete such a structure from storage will likely result in data corruption, rendering the structure unusable.
+ *  See https://github.com/ethereum/solidity/pull/11843[ethereum/solidity#11843] for more info.
+ *
+ *  In order to clean an EnumerableSet, you can either remove all elements one by one or create a fresh instance using an array of EnumerableSet.
+ * ====
+ */
+library EnumerableSet {
+    // To implement this library for multiple types with as little code
+    // repetition as possible, we write it in terms of a generic Set type with
+    // bytes32 values.
+    // The Set implementation uses private functions, and user-facing
+    // implementations (such as AddressSet) are just wrappers around the
+    // underlying Set.
+    // This means that we can only create new EnumerableSets for types that fit
+    // in bytes32.
+
+    struct Set {
+        // Storage of set values
+        bytes32[] _values;
+        // Position of the value in the `values` array, plus 1 because index 0
+        // means a value is not in the set.
+        mapping(bytes32 => uint256) _indexes;
+    }
+
+    /**
+     * @dev Add a value to a set. O(1).
+     *
+     * Returns true if the value was added to the set, that is if it was not
+     * already present.
+     */
+    function _add(Set storage set, bytes32 value) private returns (bool) {
+        if (!_contains(set, value)) {
+            set._values.push(value);
+            // The value is stored at length-1, but we add 1 to all indexes
+            // and use 0 as a sentinel value
+            set._indexes[value] = set._values.length;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @dev Removes a value from a set. O(1).
+     *
+     * Returns true if the value was removed from the set, that is if it was
+     * present.
+     */
+    function _remove(Set storage set, bytes32 value) private returns (bool) {
+        // We read and store the value's index to prevent multiple reads from the same storage slot
+        uint256 valueIndex = set._indexes[value];
+
+        if (valueIndex != 0) {
+            // Equivalent to contains(set, value)
+            // To delete an element from the _values array in O(1), we swap the element to delete with the last one in
+            // the array, and then remove the last element (sometimes called as 'swap and pop').
+            // This modifies the order of the array, as noted in {at}.
+
+            uint256 toDeleteIndex = valueIndex - 1;
+            uint256 lastIndex = set._values.length - 1;
+
+            if (lastIndex != toDeleteIndex) {
+                bytes32 lastValue = set._values[lastIndex];
+
+                // Move the last value to the index where the value to delete is
+                set._values[toDeleteIndex] = lastValue;
+                // Update the index for the moved value
+                set._indexes[lastValue] = valueIndex; // Replace lastValue's index to valueIndex
+            }
+
+            // Delete the slot where the moved value was stored
+            set._values.pop();
+
+            // Delete the index for the deleted slot
+            delete set._indexes[value];
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @dev Returns true if the value is in the set. O(1).
+     */
+    function _contains(Set storage set, bytes32 value) private view returns (bool) {
+        return set._indexes[value] != 0;
+    }
+
+    /**
+     * @dev Returns the number of values on the set. O(1).
+     */
+    function _length(Set storage set) private view returns (uint256) {
+        return set._values.length;
+    }
+
+    /**
+     * @dev Returns the value stored at position `index` in the set. O(1).
+     *
+     * Note that there are no guarantees on the ordering of values inside the
+     * array, and it may change when more values are added or removed.
+     *
+     * Requirements:
+     *
+     * - `index` must be strictly less than {length}.
+     */
+    function _at(Set storage set, uint256 index) private view returns (bytes32) {
+        return set._values[index];
+    }
+
+    /**
+     * @dev Return the entire set in an array
+     *
+     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed
+     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that
+     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
+     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
+     */
+    function _values(Set storage set) private view returns (bytes32[] memory) {
+        return set._values;
+    }
+
+    // Bytes32Set
+
+    struct Bytes32Set {
+        Set _inner;
+    }
+
+    /**
+     * @dev Add a value to a set. O(1).
+     *
+     * Returns true if the value was added to the set, that is if it was not
+     * already present.
+     */
+    function add(Bytes32Set storage set, bytes32 value) internal returns (bool) {
+        return _add(set._inner, value);
+    }
+
+    /**
+     * @dev Removes a value from a set. O(1).
+     *
+     * Returns true if the value was removed from the set, that is if it was
+     * present.
+     */
+    function remove(Bytes32Set storage set, bytes32 value) internal returns (bool) {
+        return _remove(set._inner, value);
+    }
+
+    /**
+     * @dev Returns true if the value is in the set. O(1).
+     */
+    function contains(Bytes32Set storage set, bytes32 value) internal view returns (bool) {
+        return _contains(set._inner, value);
+    }
+
+    /**
+     * @dev Returns the number of values in the set. O(1).
+     */
+    function length(Bytes32Set storage set) internal view returns (uint256) {
+        return _length(set._inner);
+    }
+
+    /**
+     * @dev Returns the value stored at position `index` in the set. O(1).
+     *
+     * Note that there are no guarantees on the ordering of values inside the
+     * array, and it may change when more values are added or removed.
+     *
+     * Requirements:
+     *
+     * - `index` must be strictly less than {length}.
+     */
+    function at(Bytes32Set storage set, uint256 index) internal view returns (bytes32) {
+        return _at(set._inner, index);
+    }
+
+    /**
+     * @dev Return the entire set in an array
+     *
+     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed
+     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that
+     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
+     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
+     */
+    function values(Bytes32Set storage set) internal view returns (bytes32[] memory) {
+        return _values(set._inner);
+    }
+
+    // AddressSet
+
+    struct AddressSet {
+        Set _inner;
+    }
+
+    /**
+     * @dev Add a value to a set. O(1).
+     *
+     * Returns true if the value was added to the set, that is if it was not
+     * already present.
+     */
+    function add(AddressSet storage set, address value) internal returns (bool) {
+        return _add(set._inner, bytes32(uint256(uint160(value))));
+    }
+
+    /**
+     * @dev Removes a value from a set. O(1).
+     *
+     * Returns true if the value was removed from the set, that is if it was
+     * present.
+     */
+    function remove(AddressSet storage set, address value) internal returns (bool) {
+        return _remove(set._inner, bytes32(uint256(uint160(value))));
+    }
+
+    /**
+     * @dev Returns true if the value is in the set. O(1).
+     */
+    function contains(AddressSet storage set, address value) internal view returns (bool) {
+        return _contains(set._inner, bytes32(uint256(uint160(value))));
+    }
+
+    /**
+     * @dev Returns the number of values in the set. O(1).
+     */
+    function length(AddressSet storage set) internal view returns (uint256) {
+        return _length(set._inner);
+    }
+
+    /**
+     * @dev Returns the value stored at position `index` in the set. O(1).
+     *
+     * Note that there are no guarantees on the ordering of values inside the
+     * array, and it may change when more values are added or removed.
+     *
+     * Requirements:
+     *
+     * - `index` must be strictly less than {length}.
+     */
+    function at(AddressSet storage set, uint256 index) internal view returns (address) {
+        return address(uint160(uint256(_at(set._inner, index))));
+    }
+
+    /**
+     * @dev Return the entire set in an array
+     *
+     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed
+     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that
+     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
+     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
+     */
+    function values(AddressSet storage set) internal view returns (address[] memory) {
+        bytes32[] memory store = _values(set._inner);
+        address[] memory result;
+
+        /// @solidity memory-safe-assembly
+        assembly {
+            result := store
+        }
+
+        return result;
+    }
+
+    // UintSet
+
+    struct UintSet {
+        Set _inner;
+    }
+
+    /**
+     * @dev Add a value to a set. O(1).
+     *
+     * Returns true if the value was added to the set, that is if it was not
+     * already present.
+     */
+    function add(UintSet storage set, uint256 value) internal returns (bool) {
+        return _add(set._inner, bytes32(value));
+    }
+
+    /**
+     * @dev Removes a value from a set. O(1).
+     *
+     * Returns true if the value was removed from the set, that is if it was
+     * present.
+     */
+    function remove(UintSet storage set, uint256 value) internal returns (bool) {
+        return _remove(set._inner, bytes32(value));
+    }
+
+    /**
+     * @dev Returns true if the value is in the set. O(1).
+     */
+    function contains(UintSet storage set, uint256 value) internal view returns (bool) {
+        return _contains(set._inner, bytes32(value));
+    }
+
+    /**
+     * @dev Returns the number of values on the set. O(1).
+     */
+    function length(UintSet storage set) internal view returns (uint256) {
+        return _length(set._inner);
+    }
+
+    /**
+     * @dev Returns the value stored at position `index` in the set. O(1).
+     *
+     * Note that there are no guarantees on the ordering of values inside the
+     * array, and it may change when more values are added or removed.
+     *
+     * Requirements:
+     *
+     * - `index` must be strictly less than {length}.
+     */
+    function at(UintSet storage set, uint256 index) internal view returns (uint256) {
+        return uint256(_at(set._inner, index));
+    }
+
+    /**
+     * @dev Return the entire set in an array
+     *
+     * WARNING: This operation will copy the entire storage to memory, which can be quite expensive. This is designed
+     * to mostly be used by view accessors that are queried without any gas fees. Developers should keep in mind that
+     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
+     * uncallable if the set grows to a point where copying to memory consumes too much gas to fit in a block.
+     */
+    function values(UintSet storage set) internal view returns (uint256[] memory) {
+        bytes32[] memory store = _values(set._inner);
+        uint256[] memory result;
+
+        /// @solidity memory-safe-assembly
+        assembly {
+            result := store
+        }
+
+        return result;
+    }
+}
 
 
 
 pragma solidity ^0.8.4;
 
 
-
-
-
-
-
 contract OriginalMyths is ERC721A, Ownable, ReentrancyGuard {
     using SafeMath for uint256;
-    using ECDSA for bytes32;
+    using EnumerableSet for EnumerableSet.UintSet;
     bytes32 public root;
-    address private _signerAddress;
-    uint256 public constant MAX_SUPPLY = 2000;
-    uint256 public MAX_WHITELIST_LIMIT = 1000;
-    uint256 public whitelistMinted;
-    uint256 public WHITELIST_LIMIT = 1;
-    uint256 public PUBLIC_LIMIT = 1;
-    uint256 public WHITELIST_SALE_START_TIME;
-    uint256 public WHITELIST_SALE_END_TIME;
-    uint256 public PUBLIC_SALE_START_TIME;
-    uint256 public PUBLIC_SALE_END_TIME;
+    uint256 public immutable MAX_SUPPLY = 1800;
+    uint256 public immutable MINT_PRICE = 0.02 ether;
+    uint256 public WHITELIST_SALE_START_TIME = 1671669000;
+    uint256 public WHITELIST_SALE_END_TIME = 1671712200;
     string private baseURI_;
-  
-    mapping(address=>uint256) private whitelistCounter;
-    mapping(address=>uint256) private publicCounter;
-    mapping(bytes=>bool) private usedSign;
 
-    event WhitelistSaleTimeChanged(uint256 startTime, uint256 endTime);
-    event PublicSaleTimeChanged(uint256 startTime, uint256 endTime);
+    mapping (address => EnumerableSet.UintSet) private _holderTokens;
 
-    constructor() ERC721A("Original Myths", "$MYTH") {
-        _signerAddress = 0x92dc039863f239a7E1d14B0f2E512AF6FCF34409;
-    }
+    constructor() ERC721A("Original Myths", "$MYTH") {}
 
     function _baseURI() internal view virtual override returns (string memory) {
         return baseURI_;
     }
 
+    function tokenOfOwnerByIndex(address owner, uint256 index) public view returns (uint256) {
+        return _holderTokens[owner].at(index);
+    }
+
+    function getTokenHolding(address owner) public view returns(uint256[] memory) {
+        uint256 len = _holderTokens[owner].length();
+        uint256[] memory tokens = new uint256[](len);
+        for(uint256 i=0;i<len;i++){
+            uint256 tokenId = tokenOfOwnerByIndex(owner,i);
+            tokens[i] = tokenId;
+        }
+        return tokens;
+    }
 
     function setBaseURI(string memory URI) public onlyOwner {
         baseURI_ = URI;
     }
 
-
-    function getWhitelistMinted(address wallet) public view returns(uint256){
-        return whitelistCounter[wallet];
-    }
-
-    function getPublicMinted(address wallet) public view returns(uint256){
-        return publicCounter[wallet];
-    }
-    
-    function MaxWhitelistLimit() public view returns(uint256){
-        return MAX_WHITELIST_LIMIT;
-    }
-
-    function whitelistLimit() public view returns(uint256){
-        return WHITELIST_LIMIT;
-    }
-
-    function publicLimit() public view returns(uint256){
-        return PUBLIC_LIMIT;
-    }
-
-    function isSignUsed(bytes memory signature) public view returns(bool){
-        return usedSign[signature];
-    }
     function isValid(bytes32[] memory proof, bytes32 leaf) public view returns (bool) {
         return MerkleProof.verify(proof, root, leaf);
     }
@@ -2227,75 +2342,34 @@ contract OriginalMyths is ERC721A, Ownable, ReentrancyGuard {
         root = _root;
     }
     
-    function setSigner(address _signer) public onlyOwner {
-        _signerAddress = _signer;
-    }
-
-    function startWhitelistPhase(uint256 startTime, uint256 endTime) public onlyOwner {
+    function changeWhitelistPhase(uint256 startTime, uint256 endTime) public onlyOwner {
         WHITELIST_SALE_START_TIME = startTime;
         WHITELIST_SALE_END_TIME = endTime;
-        emit WhitelistSaleTimeChanged(startTime, endTime);
     }
 
-    function changeMintLimit(uint256 whitelistLimit_, uint256 publicLimit_) public onlyOwner { 
-        WHITELIST_LIMIT = whitelistLimit_;
-        PUBLIC_LIMIT = publicLimit_;
+    function isWhitelistSaleIsOn() public view returns (bool) {
+        if (
+            block.timestamp > WHITELIST_SALE_START_TIME &&
+            block.timestamp < WHITELIST_SALE_END_TIME
+        ) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
-    function changeMaxWhitelistLimit(uint256 limit) public onlyOwner {
-        MAX_WHITELIST_LIMIT = limit;
-    }
-
-    function changePublicSaleTime(uint256 startTime, uint256 endTime) public onlyOwner {
-        PUBLIC_SALE_START_TIME = startTime;
-        PUBLIC_SALE_END_TIME = endTime;
-        emit PublicSaleTimeChanged(startTime, endTime);
+    modifier whenWhitelistSaleIsOn {
+        require(isWhitelistSaleIsOn() == true, "OM: Whitelist Sale is not live");
+        _;
     }
     
-    function whenWhitelistSaleIsOn() public view returns (bool) {
-        if (
-        block.timestamp > WHITELIST_SALE_START_TIME &&
-        block.timestamp < WHITELIST_SALE_END_TIME
-        ) {
-        return true;
-        } else {
-        return false;
-        }
-    }
-
-    function whenPublicSaleIsOn() public view returns (bool) {
-        if (
-        block.timestamp > PUBLIC_SALE_START_TIME &&
-        block.timestamp < PUBLIC_SALE_END_TIME
-        ) {
-        return true;
-        } else {
-        return false;
-        }
-    }
- 
-    function whitelistMint(uint256 quantity, bytes32[] memory proof) external  nonReentrant {
-        require(whenWhitelistSaleIsOn() == true, "OM: Whitelist Sale Not Started Yet");
+    function whitelistMint(uint256 quantity, bytes32[] memory proof) public payable nonReentrant whenWhitelistSaleIsOn {
         require(isValid(proof, keccak256(abi.encodePacked(msg.sender))), "OM: Not a part of Whitelist");
-        whitelistCounter[msg.sender] += quantity;
-        require(whitelistCounter[msg.sender] <= WHITELIST_LIMIT, "OM: Whitelist Limit Exceeded");
-        whitelistMinted+=quantity;
-        require(whitelistMinted <= MAX_WHITELIST_LIMIT, "OM: Max Whitelist Limit Exceeded");
         require(totalSupply().add(quantity) <= MAX_SUPPLY, "OM: Mint would exceed max limit");
+        require(MINT_PRICE.mul(quantity) == msg.value, "OM: Send proper mint fees");
+        payable(owner()).transfer(msg.value);
         _safeMint(msg.sender, quantity);
     }
-
-    function publicMint(uint256 quantity, bytes calldata signature) external  nonReentrant {
-        require(whenPublicSaleIsOn() == true, "OM: Public Sale Not Started Yet");
-        require(usedSign[signature] == false, "OM: Signature is used");
-        usedSign[signature] = true;
-        require(checkSign(signature, msg.sender, publicCounter[msg.sender]) ==_signerAddress, "EF: Invalid Signature");
-        publicCounter[msg.sender] += quantity;
-        require(publicCounter[msg.sender] <= PUBLIC_LIMIT, "OM: Public Limit Exceeded");
-        require(totalSupply().add(quantity) <= MAX_SUPPLY, "OM: Mint would exceed max limit");
-        _safeMint(msg.sender, quantity);
-    }
-
 
     function ownerMint(uint256 quantity) public onlyOwner {
         require(totalSupply().add(quantity) <= MAX_SUPPLY, "OM: Exceeding Max Limit");
@@ -2307,17 +2381,31 @@ contract OriginalMyths is ERC721A, Ownable, ReentrancyGuard {
         _burn(tokenId);
     }
 
-    function checkSign(bytes calldata signature, address wallet, uint256 quantity) public pure returns (address) {
-        return keccak256(
-            abi.encodePacked(
-               "\x19Ethereum Signed Message:\n32",
-                getSignData(wallet, quantity)
-            )
-        ).recover(signature);
+    function withdraw() public onlyOwner {
+        payable(owner()).transfer(address(this).balance);
     }
     
-    function getSignData(address wallet, uint256 quantity) public pure returns(bytes32){
-        return keccak256(abi.encodePacked(keccak256(abi.encodePacked(wallet)), keccak256(abi.encodePacked(quantity))));
+    /**
+     * @dev Returns the starting token ID.
+     * To change the starting token ID, please override this function.
+     */
+    function _startTokenId() internal view virtual override returns (uint256) {
+        return 1;
     }
+
+    function _beforeTokenTransfers(
+        address from,
+        address to,
+        uint256 startTokenId,
+        uint256 quantity
+    ) internal virtual override {
+        for(uint256 i = 0;i<quantity;i++){
+            if(from!=address(0)){
+                _holderTokens[from].remove(startTokenId.add(i));
+            }
+            _holderTokens[to].add(startTokenId.add(i));
+        }
+    }
+
 
 }
